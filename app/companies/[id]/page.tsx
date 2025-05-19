@@ -12,6 +12,7 @@ import { CompanyDocuments } from "@/components/company-documents"
 import { CompanyNotes } from "@/components/company-notes"
 import { ArrowLeft } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { CompanyChat } from "@/components/company-chat"
 
 // This would normally be fetched from an API
 const getCompany = (id: string) => {
@@ -20,6 +21,17 @@ const getCompany = (id: string) => {
     name: "Acme Inc",
     url: "https://acme.com",
     summary: "Global technology provider specializing in enterprise solutions.",
+    description: "Acme Inc is a leading technology company that provides innovative solutions for businesses worldwide. With over 20 years of experience, we specialize in enterprise software, cloud services, and digital transformation.",
+    address: "123 Tech Street, Silicon Valley, CA 94043",
+    contact: {
+      email: "contact@acme.com",
+      phone: "+1 (555) 123-4567"
+    },
+    documents: [
+      { name: "Company Profile.pdf", date: "2024-03-15" },
+      { name: "Financial Report 2023.pdf", date: "2024-02-01" },
+      { name: "Service Agreement.pdf", date: "2024-01-10" }
+    ]
   }
 }
 
@@ -65,7 +77,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
 
         <Tabs defaultValue="info">
           <div className="bg-muted/50 rounded-lg p-1">
-            <TabsList className="w-full grid grid-cols-5">
+            <TabsList className="w-full grid grid-cols-6">
               <TabsTrigger value="info" className="w-full">
                 Company Info
               </TabsTrigger>
@@ -80,6 +92,9 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
               </TabsTrigger>
               <TabsTrigger value="notes" className="w-full">
                 Notes
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="w-full">
+                Chat
               </TabsTrigger>
             </TabsList>
           </div>
@@ -137,6 +152,17 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                 </CardHeader>
                 <CardContent>
                   <CompanyNotes companyId={company.id} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="chat" className="w-full">
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>Company Assistant</CardTitle>
+                  <CardDescription>Chat with AI about {companyName}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CompanyChat companyInfo={{ ...company, name: companyName }} />
                 </CardContent>
               </Card>
             </TabsContent>
