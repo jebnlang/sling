@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  Upload,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,6 +25,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { toast } from "@/hooks/use-toast"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 interface ProposalWorkspaceProps {
   proposal: {
@@ -43,28 +47,32 @@ interface ProposalWorkspaceProps {
   }
 }
 
+// Define version history interface
+interface DocumentVersion {
+  id: string;
+  versionNumber: number;
+  uploadedAt: string;
+  uploadedBy: string;
+  status: "Uploaded" | "Not Uploaded" | "Completed";
+  notes?: string;
+}
+
 // Define document status types
 type DocumentStatus =
   | "Uploaded"
   | "Not Uploaded"
-  | "Reviewed"
-  | "Not Reviewed"
-  | "Signed"
-  | "Not Signed"
-  | "Not Required"
-  | "Ready"
-  | "Not Ready"
+  | "Completed"
 
 // Define document interface
 interface CriticalDocument {
   id: string
   name: string
-  uploadStatus: DocumentStatus
-  reviewStatus: DocumentStatus
-  signatureStatus: DocumentStatus
-  submissionStatus: DocumentStatus
+  status: DocumentStatus
   lastUpdated: string
   updatedBy: string
+  required?: boolean
+  versionHistory: DocumentVersion[]
+  currentVersion: number
 }
 
 export function ProposalWorkspace({ proposal }: ProposalWorkspaceProps) {
@@ -74,58 +82,127 @@ export function ProposalWorkspace({ proposal }: ProposalWorkspaceProps) {
   const [submissionDueDate, setSubmissionDueDate] = useState("2025-04-23")
   const [editingDraftDate, setEditingDraftDate] = useState(false)
   const [editingSubmissionDate, setEditingSubmissionDate] = useState(false)
+  const [selectedDocument, setSelectedDocument] = useState<CriticalDocument | null>(null)
+  const [showVersionHistory, setShowVersionHistory] = useState(false)
+  const [showUploadDialog, setShowUploadDialog] = useState(false)
+  const [showStatusDialog, setShowStatusDialog] = useState(false)
+  const [uploadNotes, setUploadNotes] = useState("")
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [statusNotes, setStatusNotes] = useState("")
+  const [selectedReviewStatus, setSelectedReviewStatus] = useState<DocumentStatus | null>(null)
+  const [selectedSignatureStatus, setSelectedSignatureStatus] = useState<DocumentStatus | null>(null)
 
-  // Sample data for critical documents
+  // Sample data for critical documents - now with version history
   const [criticalDocuments, setCriticalDocuments] = useState<CriticalDocument[]>([
     {
       id: "doc1",
       name: "Detailed Service Approach and Experience",
-      uploadStatus: "Uploaded",
-      reviewStatus: "Reviewed",
-      signatureStatus: "Signed",
-      submissionStatus: "Ready",
+      status: "Uploaded",
       lastUpdated: "2025-04-15",
       updatedBy: "Edward Ramirez",
+      required: true,
+      currentVersion: 3,
+      versionHistory: [
+        {
+          id: "v1-doc1",
+          versionNumber: 1,
+          uploadedAt: "2025-04-10 09:15",
+          uploadedBy: "Sarah Johnson",
+          status: "Uploaded",
+          notes: "Initial draft"
+        },
+        {
+          id: "v2-doc1",
+          versionNumber: 2,
+          uploadedAt: "2025-04-12 14:30",
+          uploadedBy: "Sarah Johnson",
+          status: "Not Uploaded",
+          notes: "Missing service details for high-rise buildings"
+        },
+        {
+          id: "v3-doc1",
+          versionNumber: 3,
+          uploadedAt: "2025-04-15 10:45",
+          uploadedBy: "Edward Ramirez",
+          status: "Completed",
+          notes: "Final version with all required details"
+        }
+      ]
     },
     {
       id: "doc2",
       name: "Bid Form with Pricing Details",
-      uploadStatus: "Uploaded",
-      reviewStatus: "Not Reviewed",
-      signatureStatus: "Not Signed",
-      submissionStatus: "Not Ready",
+      status: "Uploaded",
       lastUpdated: "2025-04-14",
       updatedBy: "Sarah Johnson",
+      required: true,
+      currentVersion: 1,
+      versionHistory: [
+        {
+          id: "v1-doc2",
+          versionNumber: 1,
+          uploadedAt: "2025-04-14 16:20",
+          uploadedBy: "Sarah Johnson",
+          status: "Uploaded",
+          notes: "Initial pricing details"
+        }
+      ]
     },
     {
       id: "doc3",
       name: "Disclosure Questionnaire",
-      uploadStatus: "Not Uploaded",
-      reviewStatus: "Not Reviewed",
-      signatureStatus: "Not Signed",
-      submissionStatus: "Not Ready",
+      status: "Not Uploaded",
       lastUpdated: "-",
       updatedBy: "-",
+      required: true,
+      currentVersion: 0,
+      versionHistory: []
     },
     {
       id: "doc4",
       name: "Licenses, Insurance Certificates, and References",
-      uploadStatus: "Uploaded",
-      reviewStatus: "Reviewed",
-      signatureStatus: "Not Required",
-      submissionStatus: "Ready",
+      status: "Completed",
       lastUpdated: "2025-04-12",
       updatedBy: "Edward Ramirez",
+      required: true,
+      currentVersion: 2,
+      versionHistory: [
+        {
+          id: "v1-doc4",
+          versionNumber: 1,
+          uploadedAt: "2025-04-08 11:30",
+          uploadedBy: "Sarah Johnson",
+          status: "Uploaded",
+          notes: "Initial documentation"
+        },
+        {
+          id: "v2-doc4",
+          versionNumber: 2,
+          uploadedAt: "2025-04-12 09:45",
+          uploadedBy: "Edward Ramirez",
+          status: "Completed",
+          notes: "Updated with current insurance certificates"
+        }
+      ]
     },
     {
       id: "doc5",
       name: "Company Profile",
-      uploadStatus: "Uploaded",
-      reviewStatus: "Reviewed",
-      signatureStatus: "Not Required",
-      submissionStatus: "Ready",
+      status: "Completed",
       lastUpdated: "2025-04-10",
       updatedBy: "Edward Ramirez",
+      required: false,
+      currentVersion: 1,
+      versionHistory: [
+        {
+          id: "v1-doc5",
+          versionNumber: 1,
+          uploadedAt: "2025-04-10 15:20",
+          uploadedBy: "Edward Ramirez",
+          status: "Completed",
+          notes: "Standard company profile"
+        }
+      ]
     },
   ])
 
@@ -197,19 +274,12 @@ export function ProposalWorkspace({ proposal }: ProposalWorkspaceProps) {
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "Uploaded":
-      case "Reviewed":
-      case "Signed":
-      case "Ready":
+      case "Completed":
         return "success"
       case "Not Uploaded":
-      case "Not Reviewed":
-      case "Not Signed":
-      case "Not Ready":
         return "destructive"
-      case "Not Required":
-        return "outline"
       default:
-        return "default"
+        return "outline"
     }
   }
 
@@ -217,17 +287,10 @@ export function ProposalWorkspace({ proposal }: ProposalWorkspaceProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Uploaded":
-      case "Reviewed":
-      case "Signed":
-      case "Ready":
+      case "Completed":
         return <CheckCircle2 className="h-4 w-4 text-green-500" />
       case "Not Uploaded":
-      case "Not Reviewed":
-      case "Not Signed":
-      case "Not Ready":
         return <AlertTriangle className="h-4 w-4 text-red-500" />
-      case "Not Required":
-        return <Check className="h-4 w-4 text-muted-foreground" />
       default:
         return null
     }
@@ -236,35 +299,21 @@ export function ProposalWorkspace({ proposal }: ProposalWorkspaceProps) {
   // Check if all required documents are ready
   const allRequiredDocumentsReady = criticalDocuments
     .filter((doc) => doc.required)
-    .every((doc) => doc.submissionStatus === "Ready")
+    .every((doc) => doc.status === "Completed")
 
   // Function to update document status
   const updateDocumentStatus = (
     docId: string,
-    statusType: "uploadStatus" | "reviewStatus" | "signatureStatus" | "submissionStatus",
+    statusType: "status",
     newStatus: DocumentStatus,
   ) => {
     const updatedDocuments = criticalDocuments.map((doc) => {
       if (doc.id === docId) {
         const updatedDoc = {
           ...doc,
-          [statusType]: newStatus,
+          status: newStatus,
           lastUpdated: new Date().toLocaleDateString(),
           updatedBy: "Current User", // In a real app, this would be the current user's name
-        }
-
-        // Auto-update submission status if all other statuses are good
-        if (statusType !== "submissionStatus") {
-          const isUploadGood = updatedDoc.uploadStatus === "Uploaded"
-          const isReviewGood = updatedDoc.reviewStatus === "Reviewed"
-          const isSignatureGood =
-            updatedDoc.signatureStatus === "Signed" || updatedDoc.signatureStatus === "Not Required"
-
-          if (isUploadGood && isReviewGood && isSignatureGood) {
-            updatedDoc.submissionStatus = "Ready"
-          } else {
-            updatedDoc.submissionStatus = "Not Ready"
-          }
         }
 
         return updatedDoc
@@ -282,10 +331,133 @@ export function ProposalWorkspace({ proposal }: ProposalWorkspaceProps) {
   }
 
   // Available status options for each status type
-  const uploadStatusOptions: DocumentStatus[] = ["Uploaded", "Not Uploaded"]
-  const reviewStatusOptions: DocumentStatus[] = ["Reviewed", "Not Reviewed"]
-  const signatureStatusOptions: DocumentStatus[] = ["Signed", "Not Signed", "Not Required"]
-  const submissionStatusOptions: DocumentStatus[] = ["Ready", "Not Ready"]
+  const statusOptions: DocumentStatus[] = ["Uploaded", "Not Uploaded", "Completed"]
+
+  // Add this function to handle opening the version history modal
+  const handleViewVersionHistory = (document: CriticalDocument) => {
+    setSelectedDocument(document);
+    setShowVersionHistory(true);
+  };
+
+  // Add this function to handle opening the upload dialog
+  const handleOpenUploadDialog = (document: CriticalDocument) => {
+    setSelectedDocument(document);
+    setUploadNotes("");
+    setSelectedFile(null);
+    setShowUploadDialog(true);
+  };
+
+  // Add this function to handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  // Add this function to handle document upload
+  const handleUploadDocument = () => {
+    if (!selectedDocument || !selectedFile) return;
+    
+    // Create a new version
+    const newVersion = {
+      id: `v${selectedDocument.currentVersion + 1}-${selectedDocument.id}`,
+      versionNumber: selectedDocument.currentVersion + 1,
+      uploadedAt: new Date().toLocaleString(),
+      uploadedBy: "Current User", // In a real app, this would be the current user's name
+      status: "Uploaded" as const,
+      notes: uploadNotes || undefined
+    };
+    
+    // Update the document with the new version
+    const updatedDocuments = criticalDocuments.map(doc => {
+      if (doc.id === selectedDocument.id) {
+        return {
+          ...doc,
+          status: "Uploaded" as DocumentStatus,
+          currentVersion: doc.currentVersion + 1,
+          versionHistory: [...doc.versionHistory, newVersion],
+          lastUpdated: new Date().toLocaleDateString(),
+          updatedBy: "Current User" // In a real app, this would be the current user's name
+        };
+      }
+      return doc;
+    });
+    
+    setCriticalDocuments(updatedDocuments);
+    setShowUploadDialog(false);
+    
+    // Show toast notification
+    toast({
+      title: "Document uploaded",
+      description: `Version ${newVersion.versionNumber} of ${selectedDocument.name} has been uploaded successfully.`,
+    });
+  };
+
+  // Add this function to handle opening the status dialog
+  const handleOpenStatusDialog = (document: CriticalDocument) => {
+    setSelectedDocument(document);
+    setStatusNotes("");
+    setSelectedReviewStatus(document.status);
+    setSelectedSignatureStatus(document.status);
+    setShowStatusDialog(true);
+  };
+
+  // Add this function to handle updating document status with notes
+  const handleUpdateDocumentStatus = () => {
+    if (!selectedDocument || (!selectedReviewStatus && !selectedSignatureStatus)) return;
+
+    const updatedDocuments = criticalDocuments.map((doc) => {
+      if (doc.id === selectedDocument.id) {
+        const updatedDoc = {
+          ...doc,
+          ...(selectedReviewStatus && { status: selectedReviewStatus }),
+          ...(selectedSignatureStatus && { status: selectedSignatureStatus }),
+          lastUpdated: new Date().toLocaleDateString(),
+          updatedBy: "Current User", // In a real app, this would be the current user's name
+        };
+
+        // Auto-update submission status if all other statuses are good
+        const isUploadGood = updatedDoc.status === "Completed";
+
+        if (isUploadGood) {
+          updatedDoc.status = "Completed";
+        } else {
+          updatedDoc.status = "Not Uploaded";
+        }
+
+        // Add status update to version history if there are notes
+        if (statusNotes && updatedDoc.versionHistory.length > 0) {
+          const currentVersion = updatedDoc.versionHistory[updatedDoc.versionHistory.length - 1];
+          
+          // Create an updated version with the same version number but updated status
+          const updatedVersion = {
+            ...currentVersion,
+            status: selectedReviewStatus === "Completed" ? "Completed" as const : 
+                   selectedReviewStatus === "Not Uploaded" ? "Not Uploaded" as const : 
+                   currentVersion.status,
+            notes: `${currentVersion.notes || ""}\n\nStatus Update (${new Date().toLocaleString()}): ${statusNotes}`
+          };
+          
+          updatedDoc.versionHistory = [
+            ...updatedDoc.versionHistory.slice(0, -1),
+            updatedVersion
+          ];
+        }
+
+        return updatedDoc;
+      }
+      return doc;
+    });
+
+    setCriticalDocuments(updatedDocuments);
+    setShowStatusDialog(false);
+
+    // Show toast notification
+    toast({
+      title: "Status updated",
+      description: `Document status has been updated successfully.`,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -431,9 +603,9 @@ export function ProposalWorkspace({ proposal }: ProposalWorkspaceProps) {
               <TableRow>
                 <TableHead>Document Name</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Version</TableHead>
                 <TableHead>Last Updated</TableHead>
-                <TableHead className="text-center">Reviewed</TableHead>
-                <TableHead className="text-center">Signature</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -451,34 +623,66 @@ export function ProposalWorkspace({ proposal }: ProposalWorkspaceProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span
-                      className={`font-medium ${doc.uploadStatus === "Uploaded" ? "text-green-600" : "text-red-600"}`}
+                    <Select 
+                      defaultValue={doc.status}
+                      onValueChange={(value) => {
+                        const updatedDocuments = criticalDocuments.map((d) => {
+                          if (d.id === doc.id) {
+                            return {
+                              ...d,
+                              status: value as DocumentStatus,
+                              lastUpdated: new Date().toLocaleDateString(),
+                              updatedBy: "Current User"
+                            };
+                          }
+                          return d;
+                        });
+                        setCriticalDocuments(updatedDocuments);
+                      }}
                     >
-                      {doc.uploadStatus === "Uploaded" ? "Uploaded" : "Not Uploaded"}
-                    </span>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Uploaded">Uploaded</SelectItem>
+                        <SelectItem value="Not Uploaded">Not Uploaded</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    {doc.currentVersion > 0 ? (
+                      <Badge variant="outline" className="cursor-pointer hover:bg-muted" onClick={() => handleViewVersionHistory(doc)}>
+                        v{doc.currentVersion}
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          ({doc.versionHistory.length} {doc.versionHistory.length === 1 ? 'version' : 'versions'})
+                        </span>
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">{doc.lastUpdated}</span>
+                      {doc.updatedBy !== "-" && (
+                        <span className="text-xs text-muted-foreground ml-1">by {doc.updatedBy}</span>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={doc.reviewStatus === "Reviewed"}
-                      onCheckedChange={(checked) => {
-                        updateDocumentStatus(doc.id, "reviewStatus", checked ? "Reviewed" : "Not Reviewed")
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={doc.signatureStatus === "Signed"}
-                      onCheckedChange={(checked) => {
-                        updateDocumentStatus(doc.id, "signatureStatus", checked ? "Signed" : "Not Signed")
-                      }}
-                      disabled={doc.signatureStatus === "Not Required"}
-                    />
+                  <TableCell>
+                    <div className="flex justify-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleViewVersionHistory(doc)}
+                        disabled={doc.versionHistory.length === 0}>
+                        <FileText className="h-4 w-4" />
+                        <span className="sr-only">View Versions</span>
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleOpenUploadDialog(doc)}>
+                        <Upload className="h-4 w-4" />
+                        <span className="sr-only">Upload</span>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -492,6 +696,240 @@ export function ProposalWorkspace({ proposal }: ProposalWorkspaceProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Version History Dialog */}
+      {showVersionHistory && selectedDocument && (
+        <Dialog open={showVersionHistory} onOpenChange={setShowVersionHistory}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Version History - {selectedDocument.name}</DialogTitle>
+              <DialogDescription>
+                All versions of this document with upload and review history
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              {selectedDocument.versionHistory.length > 0 ? (
+                <div className="space-y-4">
+                  {[...selectedDocument.versionHistory].reverse().map((version) => (
+                    <div key={version.id} className="border rounded-md p-4 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Version {version.versionNumber}</span>
+                        </div>
+                        <Badge 
+                          variant={
+                            version.status === "Completed" ? "success" :
+                            "default"
+                          }
+                        >
+                          {version.status}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Uploaded by {version.uploadedBy} on {version.uploadedAt}
+                      </div>
+                      {version.notes && (
+                        <div className="bg-muted/50 p-2 rounded text-sm">
+                          <span className="font-medium">Notes: </span>{version.notes}
+                        </div>
+                      )}
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm">
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No versions have been uploaded yet
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowVersionHistory(false)}>
+                Close
+              </Button>
+              <Button>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload New Version
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Document Upload Dialog */}
+      {showUploadDialog && selectedDocument && (
+        <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Upload New Version</DialogTitle>
+              <DialogDescription>
+                Upload a new version of {selectedDocument.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="file-upload">Document File</Label>
+                <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                  {selectedFile ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span>{selectedFile.name}</span>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedFile(null)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted mx-auto">
+                        <Upload className="h-5 w-5" />
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Drag and drop a file here or click to browse
+                      </div>
+                      <Input 
+                        id="file-upload" 
+                        type="file" 
+                        className="hidden" 
+                        onChange={handleFileSelect} 
+                      />
+                      <Button variant="outline" size="sm" onClick={() => document.getElementById('file-upload')?.click()}>
+                        Browse Files
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="version-notes">Version Notes (Optional)</Label>
+                <Textarea
+                  id="version-notes"
+                  placeholder="Add notes about this version..."
+                  value={uploadNotes}
+                  onChange={(e) => setUploadNotes(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Document Details</h4>
+                <div className="bg-muted/50 p-3 rounded-md space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Current Version:</span>
+                    <span>v{selectedDocument.currentVersion}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">New Version:</span>
+                    <span>v{selectedDocument.currentVersion + 1}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Last Updated:</span>
+                    <span>{selectedDocument.lastUpdated}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUploadDocument} disabled={!selectedFile}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Document Status Dialog */}
+      {showStatusDialog && selectedDocument && (
+        <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Manage Document Status</DialogTitle>
+              <DialogDescription>
+                Update the status of {selectedDocument.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-sm font-medium">Document Information</h4>
+                  <Badge variant={selectedDocument.status === "Completed" ? "success" : "destructive"}>
+                    {selectedDocument.status}
+                  </Badge>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Current Version:</span>
+                    <span>v{selectedDocument.currentVersion}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Last Updated:</span>
+                    <span>{selectedDocument.lastUpdated}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Updated By:</span>
+                    <span>{selectedDocument.updatedBy}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="review-status">Review Status</Label>
+                  <Select 
+                    defaultValue={selectedDocument.status}
+                    onValueChange={(value) => setSelectedReviewStatus(value as DocumentStatus)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select review status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Uploaded">Uploaded</SelectItem>
+                      <SelectItem value="Not Uploaded">Not Uploaded</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Set to "Uploaded" when the document has been reviewed and approved.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="status-notes">Status Update Notes (Optional)</Label>
+                <Textarea
+                  id="status-notes"
+                  placeholder="Add notes about this status update..."
+                  value={statusNotes}
+                  onChange={(e) => setStatusNotes(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  These notes will be added to the version history.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateDocumentStatus}>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Update Status
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
