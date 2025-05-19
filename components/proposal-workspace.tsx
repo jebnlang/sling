@@ -717,14 +717,42 @@ export function ProposalWorkspace({ proposal }: ProposalWorkspaceProps) {
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">Version {version.versionNumber}</span>
                         </div>
-                        <Badge 
-                          variant={
-                            version.status === "Completed" ? "success" :
-                            "default"
-                          }
+                        <Select 
+                          defaultValue={version.status}
+                          onValueChange={(value) => {
+                            const updatedDocuments = criticalDocuments.map((doc) => {
+                              if (doc.id === selectedDocument.id) {
+                                const updatedVersionHistory = doc.versionHistory.map((v) => {
+                                  if (v.id === version.id) {
+                                    return {
+                                      ...v,
+                                      status: value as DocumentStatus
+                                    };
+                                  }
+                                  return v;
+                                });
+                                return {
+                                  ...doc,
+                                  versionHistory: updatedVersionHistory,
+                                  status: value as DocumentStatus,
+                                  lastUpdated: new Date().toLocaleDateString(),
+                                  updatedBy: "Current User"
+                                };
+                              }
+                              return doc;
+                            });
+                            setCriticalDocuments(updatedDocuments);
+                          }}
                         >
-                          {version.status}
-                        </Badge>
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Uploaded">Uploaded</SelectItem>
+                            <SelectItem value="Not Uploaded">Not Uploaded</SelectItem>
+                            <SelectItem value="Completed">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="text-sm text-muted-foreground">
                         Uploaded by {version.uploadedBy} on {version.uploadedAt}
