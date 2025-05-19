@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, use } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -36,9 +36,10 @@ const getSolicitation = (id: string) => {
   }
 }
 
-export default function SolicitationPage({ params }: { params: { id: string } }) {
+export default function SolicitationPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const solicitation = getSolicitation(params.id)
+  const { id } = use(params)
+  const solicitation = getSolicitation(id)
   const [activeTab, setActiveTab] = useState("info")
 
   // Function to handle back navigation
@@ -71,66 +72,62 @@ export default function SolicitationPage({ params }: { params: { id: string } })
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
-          <div className="lg:col-span-3">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="info">RFP Info</TabsTrigger>
-                <TabsTrigger value="requirements">Requirements</TabsTrigger>
-                <TabsTrigger value="docs">Docs</TabsTrigger>
-                <TabsTrigger value="timeline">Timeline</TabsTrigger>
-              </TabsList>
-              <TabsContent value="info">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Solicitation Information</CardTitle>
-                    <CardDescription>Basic information about {solicitation.name}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SolicitationInfo solicitation={solicitation} />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="requirements">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Submission Requirements</CardTitle>
-                    <CardDescription>Detailed requirements for {solicitation.name}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SolicitationRequirements solicitation={solicitation} />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="docs">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Documents</CardTitle>
-                    <CardDescription>Documents related to {solicitation.name}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SolicitationDocuments solicitationId={solicitation.id} />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="timeline">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Timeline</CardTitle>
-                    <CardDescription>Key dates for {solicitation.name}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SolicitationTimeline solicitationId={params.id} companyName={solicitation.company} />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-          <div className="lg:col-span-1">
-            <SolicitationChat solicitationId={solicitation.id} />
-          </div>
+        <div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="info">RFP Info</TabsTrigger>
+              <TabsTrigger value="requirements">Requirements</TabsTrigger>
+              <TabsTrigger value="docs">Docs</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            </TabsList>
+            <TabsContent value="info">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Solicitation Information</CardTitle>
+                  <CardDescription>Basic information about {solicitation.name}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SolicitationInfo solicitation={solicitation} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="requirements">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Submission Requirements</CardTitle>
+                  <CardDescription>Detailed requirements for {solicitation.name}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SolicitationRequirements solicitation={solicitation} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="docs">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Documents</CardTitle>
+                  <CardDescription>Documents related to {solicitation.name}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SolicitationDocuments solicitationId={solicitation.id} solicitationName={solicitation.name} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="timeline">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Timeline</CardTitle>
+                  <CardDescription>Key dates for {solicitation.name}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SolicitationTimeline solicitationId={id} companyName={solicitation.company} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
+      <SolicitationChat solicitationId={solicitation.id} solicitationName={solicitation.name} />
     </div>
   )
 }
