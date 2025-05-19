@@ -7,6 +7,12 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { SolicitationsProvider } from "@/contexts/solicitations-context"
 import { TasksProvider } from "@/contexts/tasks-context"
 
+export const metadata = {
+  title: 'Sling - RFP Management Platform',
+  description: 'Streamline your RFP process with Sling',
+  generator: 'v0.dev'
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -28,7 +34,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   )
 }
-
-export const metadata = {
-      generator: 'v0.dev'
-    };

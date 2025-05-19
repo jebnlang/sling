@@ -7,8 +7,14 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    domains: ['vercel.com'],
+    unoptimized: false,
   },
+  output: 'standalone',
+  // Use trailing slash for consistent URL handling
+  trailingSlash: true,
+  // Enable React strict mode
+  reactStrictMode: true,
 }
 
 export default nextConfig
