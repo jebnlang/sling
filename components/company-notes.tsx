@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/components/ui/use-toast"
 
 // Sample data - would be fetched from API in real implementation
 const initialNotes = [
@@ -36,6 +37,7 @@ interface CompanyNotesProps {
 export function CompanyNotes({ companyId }: CompanyNotesProps) {
   const [notes, setNotes] = useState(initialNotes)
   const [newNote, setNewNote] = useState("")
+  const { toast } = useToast()
 
   const handleAddNote = () => {
     if (!newNote.trim()) return
@@ -49,10 +51,18 @@ export function CompanyNotes({ companyId }: CompanyNotesProps) {
 
     setNotes([note, ...notes])
     setNewNote("")
+    
+    toast({
+      title: "Note added",
+      description: "Successfully added new note",
+    })
+    
+    // In a real application, you would also send this data to your backend
+    // e.g., api.addCompanyNote(companyId, note)
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
       <div className="space-y-4">
         <h3 className="text-lg font-medium">Add Note</h3>
         <Textarea

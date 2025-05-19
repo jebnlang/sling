@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, use } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,7 @@ import { CompanyQualification } from "@/components/company-qualification"
 import { CompanyDocuments } from "@/components/company-documents"
 import { CompanyNotes } from "@/components/company-notes"
 import { ArrowLeft } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 // This would normally be fetched from an API
 const getCompany = (id: string) => {
@@ -22,9 +23,26 @@ const getCompany = (id: string) => {
   }
 }
 
-export default function CompanyPage({ params }: { params: { id: string } }) {
-  const company = getCompany(params.id)
+export default function CompanyPage({ params }: { params: Promise<{ id: string }> }) {
+  // Unwrap params using React.use()
+  const { id } = use(params)
+  const company = getCompany(id)
   const [companyName, setCompanyName] = useState(company.name)
+  const { toast } = useToast()
+
+  const handleNameChange = (newName: string) => {
+    if (newName !== companyName) {
+      setCompanyName(newName)
+      
+      toast({
+        title: "Company name saved",
+        description: "Successfully updated company name",
+      })
+      
+      // In a real application, you would also send this data to your backend
+      // e.g., api.updateCompany(company.id, { name: newName })
+    }
+  }
 
   return (
     <div className="flex flex-col">
@@ -40,6 +58,7 @@ export default function CompanyPage({ params }: { params: { id: string } }) {
             type="text"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
+            onBlur={(e) => handleNameChange(e.target.value)}
             className="text-3xl font-bold tracking-tight bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded px-2"
           />
         </div>

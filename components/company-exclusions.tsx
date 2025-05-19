@@ -3,18 +3,20 @@
 import type React from "react"
 
 import { useState } from "react"
-import { X, Plus, Save } from "lucide-react"
+import { X, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/components/ui/use-toast"
 
 interface CompanyExclusionsProps {
   initialExclusions?: string[]
 }
 
 export function CompanyExclusions({ initialExclusions = [] }: CompanyExclusionsProps) {
+  const { toast } = useToast()
   const [exclusions, setExclusions] = useState<string[]>(initialExclusions)
   const [newExclusion, setNewExclusion] = useState("")
   const [editMode, setEditMode] = useState(false)
@@ -24,6 +26,14 @@ export function CompanyExclusions({ initialExclusions = [] }: CompanyExclusionsP
     if (newExclusion.trim()) {
       setExclusions([...exclusions, newExclusion.trim()])
       setNewExclusion("")
+      
+      toast({
+        title: "Exclusion added",
+        description: "Successfully added new exclusion",
+      })
+      
+      // In a real application, you would also send this data to your backend
+      // e.g., api.updateCompanyExclusions(company.id, exclusions)
     }
   }
 
@@ -31,6 +41,14 @@ export function CompanyExclusions({ initialExclusions = [] }: CompanyExclusionsP
     const updatedExclusions = [...exclusions]
     updatedExclusions.splice(index, 1)
     setExclusions(updatedExclusions)
+    
+    toast({
+      title: "Exclusion removed",
+      description: "Successfully removed exclusion",
+    })
+    
+    // In a real application, you would also send this data to your backend
+    // e.g., api.updateCompanyExclusions(company.id, updatedExclusions)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -48,13 +66,25 @@ export function CompanyExclusions({ initialExclusions = [] }: CompanyExclusionsP
 
     setExclusions(newExclusions)
     setEditMode(false)
+    
+    toast({
+      title: "Exclusions updated",
+      description: "Successfully updated all exclusions",
+    })
+    
+    // In a real application, you would also send this data to your backend
+    // e.g., api.updateCompanyExclusions(company.id, newExclusions)
   }
 
   const toggleEditMode = () => {
-    if (!editMode) {
+    if (editMode) {
+      // When exiting edit mode, save the changes
+      handleBulkSave()
+    } else {
+      // When entering edit mode, populate the textarea with current exclusions
       setBulkExclusions(exclusions.join("\n"))
+      setEditMode(true)
     }
-    setEditMode(!editMode)
   }
 
   return (
@@ -69,7 +99,7 @@ export function CompanyExclusions({ initialExclusions = [] }: CompanyExclusionsP
           </div>
           {exclusions.length > 0 && (
             <Button variant="outline" size="sm" onClick={toggleEditMode}>
-              {editMode ? "Cancel" : "Bulk Edit"}
+              {editMode ? "Done" : "Bulk Edit"}
             </Button>
           )}
         </div>
@@ -83,10 +113,9 @@ export function CompanyExclusions({ initialExclusions = [] }: CompanyExclusionsP
               placeholder="Enter one exclusion per line, e.g.&#10;This company does not do web design.&#10;This company does not work with government clients."
               className="min-h-[150px]"
             />
-            <Button onClick={handleBulkSave}>
-              <Save className="mr-2 h-4 w-4" />
-              Save Changes
-            </Button>
+            <p className="text-xs text-muted-foreground">
+              Changes will be saved automatically when you click "Done"
+            </p>
           </div>
         ) : (
           <>

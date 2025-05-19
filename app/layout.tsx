@@ -10,7 +10,7 @@ import { TasksProvider } from "@/contexts/tasks-context"
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
+      <body suppressHydrationWarning={true}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <SolicitationsProvider>
             <TasksProvider>

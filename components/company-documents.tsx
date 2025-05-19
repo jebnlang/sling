@@ -1,11 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import { FileText, Trash2, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useToast } from "@/components/ui/use-toast"
 
 // Sample data - would be fetched from API in real implementation
-const documents = [
+const initialDocuments = [
   {
     id: "1",
     name: "Company Profile.pdf",
@@ -37,11 +39,47 @@ interface CompanyDocumentsProps {
 }
 
 export function CompanyDocuments({ companyId }: CompanyDocumentsProps) {
+  const [documents, setDocuments] = useState(initialDocuments)
+  const { toast } = useToast()
+  
+  const handleDownload = (docId: string, docName: string) => {
+    // In a real app, this would initiate a file download
+    toast({
+      title: "Downloading file",
+      description: `Starting download of ${docName}`,
+    })
+    
+    // Mock API call: api.downloadDocument(companyId, docId)
+  }
+  
+  const handleDelete = (docId: string, docName: string) => {
+    // Remove the document from the state
+    setDocuments(documents.filter(doc => doc.id !== docId))
+    
+    toast({
+      title: "Document deleted",
+      description: `Successfully deleted ${docName}`,
+    })
+    
+    // In a real application, you would also send this data to your backend
+    // e.g., api.deleteDocument(companyId, docId)
+  }
+  
+  const handleUpload = () => {
+    // In a real app, this would open a file dialog
+    toast({
+      title: "Upload feature",
+      description: "File upload functionality would be implemented here",
+    })
+    
+    // Mock API call: api.uploadDocument(companyId, file)
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="w-full space-y-4">
       <div className="flex justify-between">
         <h3 className="text-lg font-medium">Company Documents</h3>
-        <Button>
+        <Button onClick={handleUpload}>
           <Upload className="mr-2 h-4 w-4" />
           Upload Document
         </Button>
@@ -56,7 +94,7 @@ export function CompanyDocuments({ companyId }: CompanyDocumentsProps) {
           <p className="mt-2 text-sm text-muted-foreground">
             Drag and drop files here or click to browse your computer
           </p>
-          <Button className="mt-4" variant="outline">
+          <Button className="mt-4" variant="outline" onClick={handleUpload}>
             Browse Files
           </Button>
         </div>
@@ -84,10 +122,18 @@ export function CompanyDocuments({ companyId }: CompanyDocumentsProps) {
               <TableCell>{doc.size}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleDownload(doc.id, doc.name)}
+                  >
                     Download
                   </Button>
-                  <Button variant="outline" size="icon">
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => handleDelete(doc.id, doc.name)}
+                  >
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Delete</span>
                   </Button>
