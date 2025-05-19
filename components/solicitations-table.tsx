@@ -27,6 +27,7 @@ const solicitations = [
     type: "Solicitation",
     baseType: "Software Implementation",
     qualificationStatus: "Pending",
+    inActivePipeline: true,
   },
   {
     id: "2",
@@ -37,6 +38,7 @@ const solicitations = [
     type: "Solicitation",
     baseType: "Cloud Services",
     qualificationStatus: "Qualified",
+    inActivePipeline: true,
   },
   {
     id: "3",
@@ -47,6 +49,7 @@ const solicitations = [
     type: "Solicitation",
     baseType: "Security Services",
     qualificationStatus: "Pending",
+    inActivePipeline: true,
   },
   {
     id: "4",
@@ -57,6 +60,7 @@ const solicitations = [
     type: "Solicitation",
     baseType: "Data Analytics",
     qualificationStatus: "Qualified",
+    inActivePipeline: true,
   },
   {
     id: "5",
@@ -67,10 +71,48 @@ const solicitations = [
     type: "Solicitation",
     baseType: "App Development",
     qualificationStatus: "Not Qualified",
+    inActivePipeline: false,
+  },
+  {
+    id: "6",
+    name: "Network Infrastructure Upgrade",
+    dueDate: "2024-02-15",
+    status: "Open",
+    value: "$425,000",
+    type: "RFP",
+    baseType: "Infrastructure",
+    qualificationStatus: "Not Started",
+    inActivePipeline: false,
+  },
+  {
+    id: "7",
+    name: "Healthcare Data Management",
+    dueDate: "2024-01-30",
+    status: "Open",
+    value: "$290,000",
+    type: "RFP",
+    baseType: "Data Management",
+    qualificationStatus: "Not Started",
+    inActivePipeline: false,
+  },
+  {
+    id: "8",
+    name: "Municipal Website Redesign",
+    dueDate: "2024-03-10",
+    status: "Open",
+    value: "$85,000",
+    type: "RFP",
+    baseType: "Web Development",
+    qualificationStatus: "Not Started",
+    inActivePipeline: false,
   },
 ]
 
-export function SolicitationsTable() {
+interface SolicitationsTableProps {
+  filter?: 'active' | 'research';
+}
+
+export function SolicitationsTable({ filter = 'active' }: SolicitationsTableProps) {
   const [selectedQualification, setSelectedQualification] = useState<string | null>(null)
 
   const handleQualify = (id: string) => {
@@ -80,6 +122,11 @@ export function SolicitationsTable() {
   const handleCloseDialog = () => {
     setSelectedQualification(null)
   }
+
+  // Filter solicitations based on the tab
+  const filteredSolicitations = filter === 'active'
+    ? solicitations.filter(s => s.inActivePipeline)
+    : solicitations;
 
   return (
     <>
@@ -96,7 +143,7 @@ export function SolicitationsTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {solicitations.map((rfp) => (
+          {filteredSolicitations.map((rfp) => (
             <TableRow key={rfp.id}>
               <TableCell className="font-medium">
                 <Link href={`/solicitations/${rfp.id}`} className="hover:underline">
@@ -139,6 +186,9 @@ export function SolicitationsTable() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => handleQualify(rfp.id)}>Qualification</DropdownMenuItem>
                       <DropdownMenuItem>View tasks</DropdownMenuItem>
+                      {!rfp.inActivePipeline && (
+                        <DropdownMenuItem>Add to pipeline</DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -170,6 +220,8 @@ function StatusBadge({ status }: { status: string }) {
         return "default"
       case "Submitted":
         return "success"
+      case "Open":
+        return "secondary"
       default:
         return "outline"
     }
@@ -187,6 +239,8 @@ function QualificationStatusBadge({ status }: { status: string }) {
         return "destructive"
       case "Pending":
         return "outline"
+      case "Not Started":
+        return "secondary"
       default:
         return "outline"
     }
