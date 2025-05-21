@@ -15,6 +15,15 @@ const nextConfig = {
   trailingSlash: true,
   // Enable React strict mode
   reactStrictMode: true,
+  // Add explicit configuration for RSC payloads
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+    // Improve RSC streaming and chunking
+    serverComponentsExternalPackages: [],
+    optimizePackageImports: ['lucide-react'],
+  },
 }
 
 export default nextConfig
